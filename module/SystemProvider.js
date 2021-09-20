@@ -266,6 +266,107 @@ export class pf1Provider extends SystemProvider {
 	}
 }
 
+export class ffd20Provider extends SystemProvider {
+	static knowledgeKeys = ["kar", "kdu", "ken", "kge", "khi", "klo", "kna", "kno", "kpl", "kre"];
+
+	get loadTemplates() {
+		return ["modules/party-overview/templates/parts/FFD20-Knowledge.html"];
+	}
+
+	get template() {
+		return "/modules/party-overview/templates/ffd20.hbs";
+	}
+
+	getKnowledge(skills) {
+		return ffd20Provider.knowledgeKeys.reduce((knowledge, key) => {
+			if (skills[key].rank > 0) knowledge[key] = skills[key].mod;
+			return knowledge;
+		}, {});
+	}
+
+	getTotalGil(currency) {
+		return currency.cgil / 100 + currency.sgil / 10 + currency.gil + currency.pgil * 10;
+	}
+
+	getActorDetails(actor) {
+		const data = actor.data.data;
+		const currency = {
+			cgil: parseInt(data.currency.cgil) + parseInt(data.altCurrency.cgil), // some actors have a string value instead of an integer
+			sgil: parseInt(data.currency.sgil) + parseInt(data.altCurrency.sgil),
+			gil: parseInt(data.currency.gil) + parseInt(data.altCurrency.gil),
+			pgil: parseInt(data.currency.pgil) + parseInt(data.altCurrency.pgil),
+		};
+		return {
+			id: actor.id,
+			name: actor.name,
+			hp: {
+				value: data.attributes.hp.value,
+				max: data.attributes.hp.max,
+			},
+			mp: {
+				value: data.attributes.mp.value,
+				max: data.attributes.mp.max,
+			},
+			limitbreak: {
+				value: data.attributes.limitbreak.value,
+				max: data.attributes.limitbreak.max,
+			},
+			armor: data.attributes.ac.normal.total,
+			perception: `+${data.skills.per.mod}`,
+			speed: data.attributes.speed.land.total,
+
+			saves: {
+				fortitude: `+${data.attributes.savingThrows.fort.total}`,
+				reflex: `+${data.attributes.savingThrows.ref.total}`,
+				will: `+${data.attributes.savingThrows.will.total}`,
+			},
+			languages: data.traits.languages ? data.traits.languages.value.map((code) => game.i18n.localize(CONFIG.FFD20.languages[code])) : [],
+			currency: currency,
+
+			knowledge: this.getKnowledge(actor.data.data.skills),
+			totalGil: this.getTotalGil(currency).toFixed(2),
+		};
+	}
+
+	getUpdate(actors) {
+		let languages = actors
+			.reduce((languages, actor) => [...new Set(languages.concat(actor.languages))], [])
+			.filter((language) => language !== undefined)
+			.sort();
+		let totalCurrency = actors.reduce(
+			(currency, actor) => {
+				for (let prop in actor.currency) {
+					currency[prop] += actor.currency[prop];
+				}
+				return currency;
+			},
+			{
+				cgil: 0,
+				sgil: 0,
+				gil: 0,
+				pgil: 0,
+			}
+		);
+		let totalPartyGil = actors.reduce((totalGil, actor) => totalGil + parseFloat(actor.totalGil), 0).toFixed(2);
+		actors = actors.map((actor) => {
+			return {
+				...actor,
+				languages: languages.map((language) => actor.languages && actor.languages.includes(language)),
+			};
+		});
+
+		return [
+			actors,
+			{
+				languages: languages,
+				totalCurrency: totalCurrency,
+				totalPartyGil: totalPartyGil,
+				knowledges: ffd20Provider.knowledgeKeys,
+			},
+		];
+	}
+}
+
 export class pf2eProvider extends SystemProvider {
 	get loadTemplates() {
 		return ["modules/party-overview/templates/parts/PF2e-Lore.html"];

@@ -1,4 +1,4 @@
-import { SystemProvider, dnd5eProvider, pf1Provider, pf2eProvider, sfrpgProvider, swadeProvider, wfrp4eProvider } from "./SystemProvider.js";
+import { SystemProvider, dnd5eProvider, pf1Provider, ffd20Provider, pf2eProvider, sfrpgProvider, swadeProvider, wfrp4eProvider } from "./SystemProvider.js";
 
 export const availableSystemProviders = {};
 export let currentSystemProvider = undefined;
@@ -46,6 +46,9 @@ export function initApi() {
 			break;
 		case "pf1":
 			systemProviders.push(new pf1Provider("native.pf1"));
+			break;
+		case "ffd20":
+			systemProviders.push(new ffd20Provider("native.ffd20"));
 			break;
 		case "pf2e":
 			systemProviders.push(new pf2eProvider("native.pf2e"));
